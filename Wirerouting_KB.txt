@@ -1,0 +1,62 @@
+%_ Para t=0
+%' Para t=-1
+
+#program initial.
+% Definiciones
+#const numrows = 3.
+#const numcols = 5.
+#const numtypes = 2.
+%#show cable/3.
+row(1..numrows).
+col(1..numcols).
+type(1..numtypes).
+direction(n,e,w,s).
+
+% What end of the cable should I start on?
+1 {lastcable(X,Y,T) : cable(X,Y,T)} 1 :- type(T).
+
+#program dynamic.
+
+% Action generation
+1 {addcable(T,D) : direction(D)} 1 :- type(T).
+
+% Executability axioms
+:- block(X,Y), cable(X,Y,T).
+:- cable(X,Y,T1), cable(X,Y,T2), T1!=T2.
+
+% Effect axioms
+cable(X,Y-1,T) :- 'lastcable(X,Y,T), addcable(T,n).
+lastcable(X,Y-1,T) :- 'lastcable(X,Y,T), addcable(T,n).
+
+cable(X+1,Y,T) :- 'lastcable(X,Y,T), addcable(T,e).
+lastcable(X+1,Y,T) :- 'lastcable(X,Y,T), addcable(T,e).
+
+cable(X-1,Y,T) :- 'lastcable(X,Y,T), addcable(T,w).
+lastcable(X-1,Y,T) :- 'lastcable(X,Y,T), addcable(T,w).
+
+cable(X,Y+1,T) :- 'lastcable(X,Y,T), addcable(T,s).
+lastcable(X,Y+1,T) :- 'lastcable(X,Y,T), addcable(T,s).
+
+
+
+%%num(G,B,M+N) :- 'num(G,B,M), boat(B), moved(G,N).
+%%num(G,B,M-N) :- 'num(G,B,M), 'boat(B), moved(G,N).
+%%boat(B1) :- 'boat(B), _opposite(B,B1).
+
+% Inertia
+%num(G,B,N) :- 'num(G,B,N), not -num(G,B,N).
+%-num(G,B,N) :- num(G,B,M), M!=N, _number(N).
+%boat(B,t) :- 'boat(B), _opposite(B,B1), not boat(B1).
+
+
+%#program always.
+% Constraints: unique value
+%:- num(G,B,N), num(G,B,M), M!=N.
+%:- boat(left), boat(right).
+
+connected(X,Y,T) :- lastcable(X,Y,T), cable(X,Y,T).
+
+#program final.
+:- not goal.
+goal :- connected(X,Y,T), row(X), col(Y), type(T).
+
