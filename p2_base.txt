@@ -1,0 +1,47 @@
+#program initial.
+% Directions
+dir(north;east;south;west).
+opmov(north,south). opmov(south,north). opmov(east,west). opmov(west,east). %opt
+
+% Assume two initial points, select one currentpoint (initial) and one endpoint (goal)
+1 { currentpoint(R,C,T) : _point(R,C,T) } 1 :- type(T).
+1 { endpoint(R,C,T) : _point(R,C,T), not currentpoint(R,C,T) } 1 :- type(T).
+
+#program dynamic.
+% Action generation
+1 { move(T,D) : _dir(D) } 1 :- _type(T), not 'reached(T).
+
+% Executability axioms
+:- 'reached(T), move(T,_).
+:- 'move(T,D1), move(T,D2), _opmov(D1,D2). % opt
+
+% Effect axioms
+currentpoint(R-1,C,T) :- 'currentpoint(R,C,T), move(T,north), _row(R-1).
+currentpoint(R,C+1,T) :- 'currentpoint(R,C,T), move(T,east), _col(C+1).
+currentpoint(R+1,C,T) :- 'currentpoint(R,C,T), move(T,south), _row(R+1).
+currentpoint(R,C-1,T) :- 'currentpoint(R,C,T), move(T,west), _col(C-1).
+
+% Executability constraints
+:- _obstacle(R,C), currentpoint(R,C,T).
+:- 'point(R,C,T1), point(R,C,T2), T1!=T2.
+
+% Inertia
+point(R,C,T) :- 'point(R,C,T).
+point(R,C,T) :- 'currentpoint(R,C,T).
+currentpoint(R,C,T) :- 'currentpoint(R,C,T), not move(T,_).
+
+#program always.
+reached(T) :- currentpoint(R,C,T), _endpoint(R,C,T).
+
+#program final.
+goal :- numwires = #count{T : reached(T)}.
+:- not goal.
+
+#show point/3.
+
+% Debug
+#show currentpoint/3.
+#show endpoint/3.
+#show move/2.
+#show reached/1.
+
