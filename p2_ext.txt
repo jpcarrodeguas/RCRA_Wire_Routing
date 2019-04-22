@@ -1,0 +1,15 @@
+#program initial.
+% Some types
+#const numwires = 2.
+type(a;b).
+col(1..7).
+row(1..6).
+
+% Initial state
+
+point(1,2,a). point(5,7,a). point(1,7,b). point(3,3,b).
+obstacle(3,6). obstacle(3,7). obstacle(4,2). obstacle(4,3). obstacle(4,6). obstacle(4,7). obstacle(5,2). obstacle(5,3). obstacle(6,6). obstacle(6,7).
+
+%point(1,1,a). point(1,4,a). point(2,2,b). point(3,5,b).
+%obstacle(2,4).
+
