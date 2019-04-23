@@ -1,7 +1,7 @@
 #program initial.
-#const numrows = 3.
-#const numcols = 5.
-#const numwires = 2.
+#const numrows = 9.
+#const numcols = 15.
+#const numwires = 4.
 
 row(1..numrows).
 col(1..numcols).
@@ -31,23 +31,38 @@ currentpoint(R,C-1,T) :- 'currentpoint(R,C,T), move(T,west), _col(C-1).
 % Executability constraints
 :- _obstacle(R,C), currentpoint(R,C,T).
 :- 'point(R,C,T1), point(R,C,T2), T1!=T2.
+%:- 'trail(R,C,_), currentpoint(R,C,_).
+:- vecinos(R,C,T,N), point(R,C,T), N > 2.
+
+#show vecinos/4.
 
 % Inertia
-%point(R,C,T) :- 'point(R,C,T).
+point(R,C,T) :- 'point(R,C,T).
+%trail(R,C,T) :- 'currentpoint(R,C,T).
+%trail(R,C,T) :- 'trail(R,C,T).
 point(R,C,T) :- 'currentpoint(R,C,T).
 currentpoint(R,C,T) :- 'currentpoint(R,C,T), not move(T,_).
 
 #program always.
 reached(T) :- currentpoint(R,C,T), _endpoint(R,C,T).
 
+vecino(R,C,T,west) :- point(R,C,T), point(R,C-1,T).
+vecino(R,C,T,east) :- point(R,C,T), point(R,C+1,T).
+vecino(R,C,T,north) :- point(R,C,T), point(R-1,C,T).
+vecino(R,C,T,south) :- point(R,C,T), point(R+1,C,T).
+
+vecinos(R,C,T,N) :- N = #count{D : vecino(R,C,T,D), _dir(D)}, point(R,C,T).
+
 #program final.
+countwires(N) :- N = #count{coords(R,C) : point(R,C,T), _type(T)}.
 goal :- numwires = #count{T : reached(T)}.
 :- not goal.
 
+#minimize{N: countwires(N)}.
 #show point/3.
-#show obstacle/2.
 
 % Debug
+%#show countwires/1.
 %#show currentpoint/3.
 %#show endpoint/3.
 %#show move/2.
