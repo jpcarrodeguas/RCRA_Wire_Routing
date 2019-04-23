@@ -7,17 +7,16 @@
 #include <stdio.h>
 #include <stdlib.h>
 
-
-int pos(int row, int col, int numrows){
-	return ((row-1)*numrows+(col-1));
+int pos(int row, int col, int numcols){
+	return ((row-1)*numcols+(col-1));
 }
 
-int row(int pos, int numrows){
-	return (pos/numrows)+1;
+int row(int pos, int numcols){
+	return (pos/numcols)+1;
 }
 
-int col(int pos, int numrows){
-	return (pos%numrows)+1;
+int col(int pos, int numcols){
+	return (pos%numcols)+1;
 }
 
 int numfromletter(char letter){
@@ -40,28 +39,40 @@ char letterfromnum(int num){
 	}
 }
 
-void write_init(int *vector, int numrows, int numcols){
+void write_init(int *vector, int numrows, int numcols, int numwires){
 	FILE *file;
 	int i;
 	
 	file = fopen("Wirerouting_EDB.txt", "w+");
 	
+	fprintf(file, "#program initial.\ntype(");
+	
+	for(i=0; i < numwires; i++){	
+		if ((i+1)==numwires){
+			fprintf(file, "%c", letterfromnum(i+1));
+		}else{
+			fprintf(file, "%c;", letterfromnum(i+1));
+		}
+	}
+	
+	fprintf(file, ").\n");
+	
 	for(i=0; i<numrows*numcols; i++){
 		switch (vector[i]){
 			case -1:
-				fprintf(file, "block(%d,%d).\n", row(i, numrows), col(i, numrows));
+				fprintf(file, "obstacle(%d,%d).\n", row(i, numcols), col(i, numcols));
 				break;
 			case 0:
 				break;
 			default:
-				fprintf(file, "cable(%d,%d,%d).\n", row(i, numrows), col(i, numrows), vector[i]);
+				fprintf(file, "point(%d,%d,%c).\n", row(i, numcols), col(i, numcols), vector[i]);
 				break;
 		}
 	}
     fclose(file);
 }
 
-void telingo_solve(int numrows, int numcols, int numtypes){
+void telingo_solve(int numrows, int numcols, int numwires){
 	FILE *fp, *f;
 	char c;//, row, col, color;
 	char *out=malloc(numrows*numcols*sizeof(char));
@@ -70,7 +81,7 @@ void telingo_solve(int numrows, int numcols, int numtypes){
 	//char rowchars[3];
 	//char colchars[3];
 	
-	snprintf(command, sizeof(command), "telingo -c numrows=%d -c numcols=%d -c numtypes=%d Wirerouting_KB.txt Wirerouting_EDB.txt --verbose=0", numrows, numcols, numtypes);
+	snprintf(command, sizeof(command), "telingo -c numrows=%d -c numcols=%d -c numwires=%d Wirerouting_KB.txt Wirerouting_EDB.txt --verbose=0 --imax=%d", numrows, numcols, numwires, numrows*numcols);
 	
 	fp = popen(command, "r");
 	f = fopen("wirerouting.txt", "w+");
@@ -79,10 +90,12 @@ void telingo_solve(int numrows, int numcols, int numtypes){
 		c = getc(fp);
 		fprintf(f, "%c", c);
 	}
-	
-	/*
+
+	fp = fopen("binairoasp.txt", "w+");
+		
 	c = getc(fp);
 	for (i=0; c!=EOF; i++){
+		/*
 		if (c == '('){ 
 			rowchars[0] = getc(fp); 	//primer posible numero de fila
 			c = getc(fp);
@@ -125,11 +138,13 @@ void telingo_solve(int numrows, int numcols, int numtypes){
 			}
 		}
 		c = getc(fp);
+		*/
+		fprintf(fp, "%c", c);
 	}
 	
 	pclose(fp);
 	
-	fp = fopen("binairoasp.txt", "w+");
+	/*
 	for (i=0; i<dimension*dimension; i++){
 		fprintf(fp, "%d", out[i]);
 		printf("%d", out[i]);
@@ -145,7 +160,7 @@ void telingo_solve(int numrows, int numcols, int numtypes){
 
 
 void read_file(char *filepath){
-	int numrows,numcols,numcables=0, c, i=0;
+	int numrows,numcols,numwires=0, c, i=0;
 	FILE *file = NULL;
 	int *vector;
 	
@@ -156,16 +171,6 @@ void read_file(char *filepath){
 		fscanf (file, "%d", &numcols);
 		
 		vector = malloc(numrows*numcols*sizeof(int));
-		
-		/*
-		*  # = -1
-		*  . = 0
-		*  a = 1
-		*  b = 2
-		* 	 .
-		*    .
-		*    .
-		*/
 		
 		while ((c = getc(file)) != EOF) {
             switch (c) {
@@ -180,9 +185,9 @@ void read_file(char *filepath){
                 case '\n':
                     break;
                 default:
-                    vector[i] = numfromletter(c);
+                    vector[i] = c;
                     i++;
-                    numcables++;
+                    numwires++;
 					break;
             }
         }
@@ -190,11 +195,11 @@ void read_file(char *filepath){
         fclose(file);
 
         printf("Generating initial configuration...\n");
-        write_init(vector, numrows, numcols);
+        write_init(vector, numrows, numcols, numwires/2);
         free(vector);
 
         printf("Solving...\n");
-        telingo_solve(numrows,numcols, numcables/2);
+        telingo_solve(numrows,numcols, numwires/2);
         printf("\nDone! (solution also in 'wirerouting.txt')\n");
 	}
 }
@@ -202,7 +207,9 @@ void read_file(char *filepath){
 int main(int argc, char **argv) {
 
     printf("Wire Routing - RCRA P2\n\n");
-
+	
+	freopen("/dev/null", "w", stderr);
+	
     if (argc != 2) {
         printf("*** Usage: wirerouting <filename>\n");
         return 1;

@@ -1,62 +1,55 @@
-%_ Para t=0
-%' Para t=-1
-
 #program initial.
-% Definiciones
 #const numrows = 3.
 #const numcols = 5.
-#const numtypes = 2.
-%#show cable/3.
+#const numwires = 2.
+
 row(1..numrows).
 col(1..numcols).
-type(1..numtypes).
-direction(n,e,w,s).
 
-% What end of the cable should I start on?
-1 {lastcable(X,Y,T) : cable(X,Y,T)} 1 :- type(T).
+% Directions
+dir(north;east;south;west).
+opmov(north,south). opmov(south,north). opmov(east,west). opmov(west,east). %opt
+
+% Assume two initial points, select one currentpoint (initial) and one endpoint (goal)
+1 { currentpoint(R,C,T) : _point(R,C,T) } 1 :- type(T).
+1 { endpoint(R,C,T) : _point(R,C,T), not currentpoint(R,C,T) } 1 :- type(T).
 
 #program dynamic.
-
 % Action generation
-1 {addcable(T,D) : direction(D)} 1 :- type(T).
+1 { move(T,D) : _dir(D) } 1 :- _type(T), not 'reached(T).
 
 % Executability axioms
-:- block(X,Y), cable(X,Y,T).
-:- cable(X,Y,T1), cable(X,Y,T2), T1!=T2.
+:- 'reached(T), move(T,_).
+:- 'move(T,D1), move(T,D2), _opmov(D1,D2). % opt
 
 % Effect axioms
-cable(X,Y-1,T) :- 'lastcable(X,Y,T), addcable(T,n).
-lastcable(X,Y-1,T) :- 'lastcable(X,Y,T), addcable(T,n).
+currentpoint(R-1,C,T) :- 'currentpoint(R,C,T), move(T,north), _row(R-1).
+currentpoint(R,C+1,T) :- 'currentpoint(R,C,T), move(T,east), _col(C+1).
+currentpoint(R+1,C,T) :- 'currentpoint(R,C,T), move(T,south), _row(R+1).
+currentpoint(R,C-1,T) :- 'currentpoint(R,C,T), move(T,west), _col(C-1).
 
-cable(X+1,Y,T) :- 'lastcable(X,Y,T), addcable(T,e).
-lastcable(X+1,Y,T) :- 'lastcable(X,Y,T), addcable(T,e).
-
-cable(X-1,Y,T) :- 'lastcable(X,Y,T), addcable(T,w).
-lastcable(X-1,Y,T) :- 'lastcable(X,Y,T), addcable(T,w).
-
-cable(X,Y+1,T) :- 'lastcable(X,Y,T), addcable(T,s).
-lastcable(X,Y+1,T) :- 'lastcable(X,Y,T), addcable(T,s).
-
-
-
-%%num(G,B,M+N) :- 'num(G,B,M), boat(B), moved(G,N).
-%%num(G,B,M-N) :- 'num(G,B,M), 'boat(B), moved(G,N).
-%%boat(B1) :- 'boat(B), _opposite(B,B1).
+% Executability constraints
+:- _obstacle(R,C), currentpoint(R,C,T).
+:- 'point(R,C,T1), point(R,C,T2), T1!=T2.
 
 % Inertia
-%num(G,B,N) :- 'num(G,B,N), not -num(G,B,N).
-%-num(G,B,N) :- num(G,B,M), M!=N, _number(N).
-%boat(B,t) :- 'boat(B), _opposite(B,B1), not boat(B1).
+%point(R,C,T) :- 'point(R,C,T).
+point(R,C,T) :- 'currentpoint(R,C,T).
+currentpoint(R,C,T) :- 'currentpoint(R,C,T), not move(T,_).
 
-
-%#program always.
-% Constraints: unique value
-%:- num(G,B,N), num(G,B,M), M!=N.
-%:- boat(left), boat(right).
-
-connected(X,Y,T) :- lastcable(X,Y,T), cable(X,Y,T).
+#program always.
+reached(T) :- currentpoint(R,C,T), _endpoint(R,C,T).
 
 #program final.
+goal :- numwires = #count{T : reached(T)}.
 :- not goal.
-goal :- connected(X,Y,T), row(X), col(Y), type(T).
+
+#show point/3.
+#show obstacle/2.
+
+% Debug
+%#show currentpoint/3.
+%#show endpoint/3.
+%#show move/2.
+%#show reached/1.
 
