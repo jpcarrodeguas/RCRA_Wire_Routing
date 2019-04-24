@@ -66,6 +66,8 @@ goal :- numwires = #count{T : reached(T)}.
 
 #minimize{N: countwires(N)}.
 #show currentpoint/3.
+#show point/3.
+#show obstacle/2.
 
 % Debug
 %#show countwires/1.
