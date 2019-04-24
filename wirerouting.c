@@ -1,8 +1,8 @@
 /*
-* AUTORES
-* Xin Lin
-* Julián Penedo Carrodeguas
-*/
+ * AUTORES
+ * Xin Lin
+ * Julián Penedo Carrodeguas
+ */
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -10,44 +10,25 @@
 #include <string.h>
 #include <unistd.h>
 
-void writestep(char * out, int numrows, int numcols){
+void writestep(int *vector, int numrows, int numcols){
 	int i;
 	
 	//system("clear"); 
-	
-	printf("\n\n");
+    printf("\033[H\033[J");
+    printf("Wire Routing - RCRA P2\n\n");
+
+    printf("WARNING! Solving large grids may take a while!\n");
+    printf("Generating initial configuration...\n");
+    printf("Solving...\n\n");
 
 	for (i=0; i<numrows*numcols; i++){
-		switch(out[i]){
-			case '#':
-				printf("#");
-				break;
-			case 'a':
-				printf("a");
-				break;
-			case 'b':
-				printf("b");
-				break;
-			case 'c':
-				printf("c");
-				break;
-			case 'd':
-				printf("d");
-				break;
-			case 'e':
-				printf("e");
-				break;
-			default:
-				printf(".");
-				break;
-		}
-
+        printf("%c", vector[i]);
 		if (((i) % numcols) == numcols-1){
             printf("\n");
 		}
 	}
 	
-	usleep(200000);
+	usleep(240000);
 	
 }
 
@@ -92,21 +73,20 @@ void write_init(int *vector, int numrows, int numcols, int numwires){
 	fprintf(file, "#program initial.\ntype(");
 	
 	for(i=0; i < numwires; i++){	
-		if ((i+1)==numwires){
-			fprintf(file, "%c", letterfromnum(i+1));
-		}else{
-			fprintf(file, "%c;", letterfromnum(i+1));
-		}
+        fprintf(file, "%c", letterfromnum(i+1));
+        if ((i+1) != numwires) {
+            fprintf(file, ";");
+        }
 	}
 	
 	fprintf(file, ").\n");
 	
 	for(i=0; i<numrows*numcols; i++){
 		switch (vector[i]){
-			case -1:
+			case '#':
 				fprintf(file, "obstacle(%d,%d).\n", row(i, numcols), col(i, numcols));
 				break;
-			case 0:
+			case '.':
 				break;
 			default:
 				fprintf(file, "point(%d,%d,%c).\n", row(i, numcols), col(i, numcols), vector[i]);
@@ -116,39 +96,69 @@ void write_init(int *vector, int numrows, int numcols, int numwires){
     fclose(file);
 }
 
-void telingo_solve(int numrows, int numcols, int numwires){
+void telingo_solve(int *vector, int numrows, int numcols, int numwires){
 	FILE *fp;
 	char c, type;
-	char command[128], rowchar[3], colchar[3];
+	char command[160], rowchar[3], colchar[3];
 	char *out=calloc(numrows*numcols, sizeof(char));
 	char *state=malloc(numrows*numcols*15*sizeof(char));;
 	char *atom=malloc(20*sizeof(char));
 	int i, numrow, numcol, j=0;
 	const char s[2] = " ";
 	
-	snprintf(command, sizeof(command), "telingo -c numrows=%d -c numcols=%d -c numwires=%d Wirerouting_KB.txt Wirerouting_EDB.txt --verbose=0 --imax=%d", numrows, numcols, numwires, numrows*numcols);
+	snprintf(command, sizeof(command), "telingo 2>/dev/null -c numrows=%d -c numcols=%d -c numwires=%d 1 "
+        "Wirerouting_KB.txt Wirerouting_EDB.txt --opt-mode=optN --quiet=1,1,2 --verbose=0 --imax=%d", numrows, numcols, numwires, numrows*numcols);
 	
 	fp = popen(command, "r");
 	
-	//f = fopen("wirerouting.txt", "w+");
 
 	c = getc(fp);
 	
 	for (i=0; c!=EOF; i++){
 
 		if (c == ':'){ 								// principio de un State
-			printf("\nestoy dentro de un state\n");
+		//	printf("\nestoy dentro de un state\n");
 			c = getc(fp);
-			printf("hola1\n");
+		//	printf("hola1\n");
 			fgets(state, numrows*numcols*15, fp); 	// copiar toda la lina
-			printf("hola2\n");
+		//	printf("hola2\n");
 			atom = strtok(state, s); 		 		// partir por espacios
-			printf("hola3\n");
+		//	printf("hola3\n");
 			
 			while (atom != NULL){			 		// mientras queden atomos
-				printf("hola4\n");
+	//			printf("hola4\n");
 				//printf("voy a procesar un atomo\n");
-				if (atom[0]=='o'){ 			 		// el atomo es un obstacle
+                if (atom[0]=='c'){                  // el atomo es un currentpoint					
+					rowchar[0]=atom[13];			// primera cifra de la fila
+					if(atom[14] == ','){		    // la fila es de una sola cifra
+						rowchar[1] = '\0';			// null terminated string
+						colchar[0] = atom[15];		// primera cifra de la columna
+						if(atom[16] == ','){		    // la columna es de una sola cifra
+							colchar[1] = '\0';		// null terminated string
+							type = atom[17];		// tipo del cable
+						} else{						// la columna tiene mas de una cifra 
+							colchar[1] = atom[16];	// segunda cifra de la columna
+							colchar[2] = '\0';		// null terminated string
+							type = atom[18];		// tipo del cable
+						}
+					}else{							// la fila tiene mas de una cifra
+						rowchar[1] = atom[14];		// segunda cifra de la fila
+						rowchar[2] = '\0';			// null terminated string
+						colchar[0] = atom[16];		// primera cifra de la columna
+						if(atom[17] == ','){		// la columna es de una sola cifra
+							colchar[1] = '\0';		// null terminated string
+							type = atom[18];		// tipo del cable
+						} else{						// la columna tiene mas de una cifra 
+							colchar[1] = atom[17];	// segunda cifra de la columna
+							colchar[2] = '\0';		// null terminated string
+							type = atom[19];		// tipo del cable
+						}
+					}
+					numrow = atoi(rowchar);
+					numcol = atoi(colchar);			
+					vector[pos(numrow, numcol, numcols)] = type;
+
+				}/* else if (atom[0]=='o'){ 	 		// el atomo es un obstacle
 					rowchar[0]=atom[9];				// primera cifra de la fila
 					if(atom[10] == ','){			// la fila es de una sola cifra
 						rowchar[1] = '\0';			// null terminated string
@@ -203,19 +213,28 @@ void telingo_solve(int numrows, int numcols, int numwires){
 					numrow = atoi(rowchar);
 					numcol = atoi(colchar);			
 					out[pos(numrow, numcol, numcols)] = type;
-				}
+				}*/
 			//printf("termine de procesar un atomo\n");
 			atom = strtok(NULL, s);
 			}
 		j++;
-		//writestep(out, numrows, numcols);
+		writestep(vector, numrows, numcols);
 		}											// fin de State
 		c = getc(fp);
 	}
 	// WRITE OUT TO FILE
-
-	
 	pclose(fp);
+
+	fp = fopen("sol_wirerouting.txt", "w+");
+	for (i=0; i<numrows*numcols; i++){
+        fprintf(fp, "%c", vector[i]);
+        //printf("%c", vector[i]);
+		if (((i) % numcols) == numcols-1){
+            fprintf(fp, "\n");
+            //printf("\n");
+		}
+	}
+    fclose(fp);
 	free(atom);
 	free(state);
 	free(out);
@@ -237,11 +256,11 @@ void read_file(char *filepath){
 		while ((c = getc(file)) != EOF) {
             switch (c) {
                 case '#':
-                    vector[i] = -1;
+                    vector[i] = c;
                     i++;
                     break;
                 case '.':
-                    vector[i] = 0;
+                    vector[i] = c;
                     i++;
                     break;
                 case '\n':
@@ -256,18 +275,29 @@ void read_file(char *filepath){
         
         fclose(file);
 
+        printf("WARNING! Solving large grids may take a while!\n");
         printf("Generating initial configuration...\n");
         write_init(vector, numrows, numcols, numwires/2);
-        free(vector);
+        //free(vector);
 
-        printf("Solving...\n");
-        telingo_solve(numrows,numcols, numwires/2);
-        printf("\nDone! (solution also in 'wirerouting.txt')\n");
+        printf("Solving...\n\n");
+
+        for (i=0; i<numrows*numcols; i++){
+            printf("%c", vector[i]);
+		    if (((i) % numcols) == numcols-1){
+                printf("\n");
+		    }
+	    }
+
+        telingo_solve(vector, numrows,numcols, numwires/2);
+        printf("\nDone! (solution also in 'sol_wirerouting.txt')\n");
+        free(vector);
 	}
 }
 
 int main(int argc, char **argv) {
 
+    printf("\033[H\033[J");
     printf("Wire Routing - RCRA P2\n\n");
 	
     if (argc != 2) {
@@ -275,7 +305,7 @@ int main(int argc, char **argv) {
         return 1;
     }
 
-    printf("Input file: %s\n\n", argv[1]);
+    //printf("Input file: %s\n\n", argv[1]);
 
     read_file(argv[1]);
 

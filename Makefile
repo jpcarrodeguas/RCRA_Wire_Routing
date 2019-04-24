@@ -4,4 +4,4 @@ wirerouting: wirerouting.c
 	gcc wirerouting.c -o wirerouting
 
 clean:
-	rm -f wirerouting wirerouting.txt Wirerouting_EDB.txt
+	rm -f wirerouting sol_wirerouting.txt Wirerouting_EDB.txt
