@@ -1,7 +1,7 @@
 #program initial.
-#const numrows = 9.
-#const numcols = 15.
-#const numwires = 4.
+#const numrows = 12.
+#const numcols = 20.
+#const numwires = 5.
 
 row(1..numrows).
 col(1..numcols).
@@ -33,25 +33,31 @@ currentpoint(R,C-1,T) :- 'currentpoint(R,C,T), move(T,west), _col(C-1).
 :- 'point(R,C,T1), point(R,C,T2), T1!=T2.
 %:- 'trail(R,C,_), currentpoint(R,C,_).
 :- vecinos(R,C,T,N), point(R,C,T), N > 2.
+:- vecinos(R,C,T,N), currentpoint(R,C,T), N!=1.
+:- ladometa(R,C,T,D), not reached(T).
 
-#show vecinos/4.
+vecino(R,C,T,west) :- point(R,C,T), point(R,C-1,T), not _endpoint(R,C-1,T).
+vecino(R,C,T,east) :- point(R,C,T), point(R,C+1,T), not _endpoint(R,C+1,T).
+vecino(R,C,T,north) :- point(R,C,T), point(R-1,C,T), not _endpoint(R-1,C,T).
+vecino(R,C,T,south) :- point(R,C,T), point(R+1,C,T), not _endpoint(R+1,C,T).
+vecinos(R,C,T,N) :- N = #count{D : vecino(R,C,T,D), _dir(D)}, point(R,C,T).
+
+ladometa(R,C,T,west) :- point(R,C,T), _endpoint(R,C-1,T), not 'reached(T).
+ladometa(R,C,T,east) :- point(R,C,T), _endpoint(R,C+1,T), not 'reached(T).
+ladometa(R,C,T,north) :- point(R,C,T), _endpoint(R-1,C,T), not 'reached(T).
+ladometa(R,C,T,south) :- point(R,C,T), _endpoint(R+1,C,T), not 'reached(T).
+%estaladometa(R,C,T) :- 1 = #count{D : ladometa(R,C,T,D), _dir(D)}, point(R,C,T).
 
 % Inertia
 point(R,C,T) :- 'point(R,C,T).
 %trail(R,C,T) :- 'currentpoint(R,C,T).
 %trail(R,C,T) :- 'trail(R,C,T).
 point(R,C,T) :- 'currentpoint(R,C,T).
-currentpoint(R,C,T) :- 'currentpoint(R,C,T), not move(T,_).
+%currentpoint(R,C,T) :- 'currentpoint(R,C,T), not move(T,_).
+reached(T) :- 'reached(T).
 
-#program always.
+%#program always.
 reached(T) :- currentpoint(R,C,T), _endpoint(R,C,T).
-
-vecino(R,C,T,west) :- point(R,C,T), point(R,C-1,T).
-vecino(R,C,T,east) :- point(R,C,T), point(R,C+1,T).
-vecino(R,C,T,north) :- point(R,C,T), point(R-1,C,T).
-vecino(R,C,T,south) :- point(R,C,T), point(R+1,C,T).
-
-vecinos(R,C,T,N) :- N = #count{D : vecino(R,C,T,D), _dir(D)}, point(R,C,T).
 
 #program final.
 countwires(N) :- N = #count{coords(R,C) : point(R,C,T), _type(T)}.
@@ -59,7 +65,7 @@ goal :- numwires = #count{T : reached(T)}.
 :- not goal.
 
 #minimize{N: countwires(N)}.
-#show point/3.
+#show currentpoint/3.
 
 % Debug
 %#show countwires/1.
@@ -67,4 +73,5 @@ goal :- numwires = #count{T : reached(T)}.
 %#show endpoint/3.
 %#show move/2.
 %#show reached/1.
+%#show vecinos/4.
 
