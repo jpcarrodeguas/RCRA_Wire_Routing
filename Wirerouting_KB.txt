@@ -34,7 +34,6 @@ currentpoint(R,C-1,T) :- 'currentpoint(R,C,T), move(T,west), _col(C-1).
 %:- 'trail(R,C,_), currentpoint(R,C,_).
 :- vecinos(R,C,T,N), point(R,C,T), N > 2.
 
-#show vecinos/4.
 
 % Inertia
 point(R,C,T) :- 'point(R,C,T).
@@ -60,6 +59,7 @@ goal :- numwires = #count{T : reached(T)}.
 
 #minimize{N: countwires(N)}.
 #show point/3.
+#show obstacle/2.
 
 % Debug
 %#show countwires/1.
@@ -67,4 +67,5 @@ goal :- numwires = #count{T : reached(T)}.
 %#show endpoint/3.
 %#show move/2.
 %#show reached/1.
+%#show vecinos/4.
 
