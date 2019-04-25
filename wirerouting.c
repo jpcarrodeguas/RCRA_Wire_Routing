@@ -100,10 +100,9 @@ void telingo_solve(int *vector, int numrows, int numcols, int numwires){
 	FILE *fp;
 	char c, type;
 	char command[160], rowchar[3], colchar[3];
-	char *out=calloc(numrows*numcols, sizeof(char));
 	char *state=malloc(numrows*numcols*15*sizeof(char));;
 	char *atom=malloc(20*sizeof(char));
-	int i, numrow, numcol, j=0;
+	int i, numrow, numcol;
 	const char s[2] = " ";
 	
 	snprintf(command, sizeof(command), "telingo 2>/dev/null -c numrows=%d -c numcols=%d -c numwires=%d 1 "
@@ -117,23 +116,17 @@ void telingo_solve(int *vector, int numrows, int numcols, int numwires){
 	for (i=0; c!=EOF; i++){
 
 		if (c == ':'){ 								// principio de un State
-		//	printf("\nestoy dentro de un state\n");
 			c = getc(fp);
-		//	printf("hola1\n");
 			fgets(state, numrows*numcols*15, fp); 	// copiar toda la lina
-		//	printf("hola2\n");
 			atom = strtok(state, s); 		 		// partir por espacios
-		//	printf("hola3\n");
 			
 			while (atom != NULL){			 		// mientras queden atomos
-	//			printf("hola4\n");
-				//printf("voy a procesar un atomo\n");
                 if (atom[0]=='c'){                  // el atomo es un currentpoint					
 					rowchar[0]=atom[13];			// primera cifra de la fila
 					if(atom[14] == ','){		    // la fila es de una sola cifra
 						rowchar[1] = '\0';			// null terminated string
 						colchar[0] = atom[15];		// primera cifra de la columna
-						if(atom[16] == ','){		    // la columna es de una sola cifra
+						if(atom[16] == ','){		// la columna es de una sola cifra
 							colchar[1] = '\0';		// null terminated string
 							type = atom[17];		// tipo del cable
 						} else{						// la columna tiene mas de una cifra 
@@ -157,87 +150,26 @@ void telingo_solve(int *vector, int numrows, int numcols, int numwires){
 					numrow = atoi(rowchar);
 					numcol = atoi(colchar);			
 					vector[pos(numrow, numcol, numcols)] = type;
-
-				}/* else if (atom[0]=='o'){ 	 		// el atomo es un obstacle
-					rowchar[0]=atom[9];				// primera cifra de la fila
-					if(atom[10] == ','){			// la fila es de una sola cifra
-						rowchar[1] = '\0';			// null terminated string
-						colchar[0] = atom[11];		// primera cifra de la columna
-						if(atom[12] == ','){		// la columna es de una sola cifra
-							colchar[1] = '\0';		// null terminated string
-						} else{						// la columna tiene mas de una cifra 
-							colchar[1] = atom[12];	// segunda cifra de la columna
-							colchar[2] = '\0';		// null terminated string
-						}
-					}else{							// la fila tiene mas de una cifra
-						rowchar[1] = atom[10];		// segunda cifra de la fila
-						rowchar[2] = '\0';			// null terminated string
-						colchar[0] = atom[12];		// primera cifra de la columna
-						if(atom[13] == ','){		// la columna es de una sola cifra
-							colchar[1] = '\0';		// null terminated string
-						} else{						// la columna tiene mas de una cifra 
-							colchar[1] = atom[13];	// segunda cifra de la columna
-							colchar[2] = '\0';		// null terminated string
-						}
-					}
-					numrow=atoi(rowchar);
-					numcol=atoi(colchar);			
-					out[pos(numrow, numcol, numcols)]='#';
-					
-				}else if (atom[0]=='p'){ 			// el atomo es un point					
-					rowchar[0]=atom[6];				// primera cifra de la fila
-					if(atom[7] == ','){			    // la fila es de una sola cifra
-						rowchar[1] = '\0';			// null terminated string
-						colchar[0] = atom[8];		// primera cifra de la columna
-						if(atom[9] == ','){		    // la columna es de una sola cifra
-							colchar[1] = '\0';		// null terminated string
-							type = atom[10];		// tipo del cable
-						} else{						// la columna tiene mas de una cifra 
-							colchar[1] = atom[9];	// segunda cifra de la columna
-							colchar[2] = '\0';		// null terminated string
-							type = atom[11];		// tipo del cable
-						}
-					}else{							// la fila tiene mas de una cifra
-						rowchar[1] = atom[7];		// segunda cifra de la fila
-						rowchar[2] = '\0';			// null terminated string
-						colchar[0] = atom[9];		// primera cifra de la columna
-						if(atom[10] == ','){		// la columna es de una sola cifra
-							colchar[1] = '\0';		// null terminated string
-							type = atom[11];		// tipo del cable
-						} else{						// la columna tiene mas de una cifra 
-							colchar[1] = atom[10];	// segunda cifra de la columna
-							colchar[2] = '\0';		// null terminated string
-							type = atom[12];		// tipo del cable
-						}
-					}
-					numrow = atoi(rowchar);
-					numcol = atoi(colchar);			
-					out[pos(numrow, numcol, numcols)] = type;
-				}*/
-			//printf("termine de procesar un atomo\n");
+				}
 			atom = strtok(NULL, s);
 			}
-		j++;
 		writestep(vector, numrows, numcols);
 		}											// fin de State
 		c = getc(fp);
 	}
-	// WRITE OUT TO FILE
+
 	pclose(fp);
 
 	fp = fopen("sol_wirerouting.txt", "w+");
 	for (i=0; i<numrows*numcols; i++){
         fprintf(fp, "%c", vector[i]);
-        //printf("%c", vector[i]);
 		if (((i) % numcols) == numcols-1){
             fprintf(fp, "\n");
-            //printf("\n");
 		}
 	}
     fclose(fp);
 	free(atom);
 	free(state);
-	free(out);
 }
 
 void read_file(char *filepath){
@@ -278,17 +210,17 @@ void read_file(char *filepath){
         printf("WARNING! Solving large grids may take a while!\n");
         printf("Generating initial configuration...\n");
         write_init(vector, numrows, numcols, numwires/2);
-        //free(vector);
 
         printf("Solving...\n\n");
 
+		
         for (i=0; i<numrows*numcols; i++){
             printf("%c", vector[i]);
 		    if (((i) % numcols) == numcols-1){
                 printf("\n");
 		    }
 	    }
-
+		
         telingo_solve(vector, numrows,numcols, numwires/2);
         printf("\nDone! (solution also in 'sol_wirerouting.txt')\n");
         free(vector);
@@ -304,8 +236,6 @@ int main(int argc, char **argv) {
         printf("*** Usage: wirerouting <filename>\n");
         return 1;
     }
-
-    //printf("Input file: %s\n\n", argv[1]);
 
     read_file(argv[1]);
 
