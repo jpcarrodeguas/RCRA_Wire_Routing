@@ -1,3 +1,7 @@
+% AUTORES
+% Xin Lin
+% Julián Penedo Carrodeguas
+
 #program initial.
 #const numrows = 12.
 #const numcols = 20.
