@@ -3,6 +3,8 @@ RCRA_Wire_routing
 
 Programa que resuelve puzles de Wirerouting utilizando telingo.
 
+Realizado como práctica para la asignatura Representación del Conocimiento y Razonamiento Automático en la Facultad de Informática de La Coruña - Año 18/19
+
 ## Compilación
 
 Toda la compilación puede hacerse utilizando el comando make.
